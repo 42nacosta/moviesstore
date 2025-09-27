@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Movie, Review
+from .models import Movie, Review, Petition, Vote
+from django.db.models import Sum
 from django.contrib.auth.decorators import login_required
 # Create your views here.
 @login_required
@@ -60,6 +61,44 @@ def show(request, id):
     template_data['reviews'] = reviews
     return render(request, 'movies/show.html',
                   {'template_data': template_data})
+
+def petition(request):
+    template_data = {}
+    template_data['petition'] = Petition.objects.all()
+    return render(request, 'movies/petition.html', {'template_data' : template_data})
+
+@login_required
+def create_petition(request):
+    if request.method == 'POST' and request.POST['content'] != '':
+        petition = Petition()
+        petition.content = request.POST['content']
+        petition.user = request.user
+        petition.save()
+        return redirect('movies.petition')
+    else:
+        return redirect('movies.petition')
+
+@login_required
+def upvote_petition(request, petition_id):
+    petition = get_object_or_404(Petition, id=petition_id)
+    vote, created = Vote.objects.get_or_create(
+        petition=petition,
+        user=request.user,
+        defaults={'value': Vote.UPVOTE}
+    )
+    if not created:
+        # If user already downvoted, switch to upvote; if already upvoted, do nothing
+        if vote.value == Vote.UPVOTE:
+            vote.value = 0
+            vote.save()
+        else:
+            vote.value = Vote.UPVOTE
+            vote.save()
+    # Recalculate petition.rating from votes
+    agg = petition.votes.aggregate(total=Sum('value'))['total']
+    petition.rating = agg or 0
+    petition.save()
+    return redirect('movies.petition')
 
 def clear(request):
     request.session['cart'] = {}

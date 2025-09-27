@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form method="POST" action="{% url 'movies.create_petition' %}">
+        {% csrf_token %}
+        <p>
+            <label for="content">Movie Name and Description:</label>
+            <textarea name="content" required class="form-control" id="content"></textarea>
+        </p>
+
+        <div class="text-center">
+            <button type="submit" class="btn bg-dark text-white">
+            Add Petition
+            </button>
+        </div>
+    </form>
+
+    <h2>Petitions</h2>
+        <hr />
+        <ul class="list-group">
+          {% for petition in template_data.petition %}
+          <li class="list-group-item pb-3 pt-3 w-50">
+            <h5 class="card-title">
+              Petition by {{ petition.user.username }}
+            </h5>
+            <h6 class="card-subtitle mb-2 text-muted">
+              {{ petition.date }}
+            </h6>
+            <p class="card-text">{{ petition.content }}</p>
+            <a class="btn btn-primary" href="{% url 'movies.upvote_petition' petition_id=petition.id %}">Upvote</a>
+            <span class="ms-2">Rating: {{ petition.rating }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+</body>
+</html>
+{% endblock content %}
