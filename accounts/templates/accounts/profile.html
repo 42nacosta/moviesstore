@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- location-feature-branch: User profile page for selecting geographic location -->
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-lg-8 col-xl-6">
+      <h1 class="mb-3">{{ template_data.title }}</h1>
+      <p class="text-muted">Update your location to unlock personalized recommendations and regional popularity data.</p>
+
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+          <strong>Location Settings</strong>
+        </div>
+        <div class="card-body">
+          {% if template_data.current_location_label %}
+          <div class="alert alert-info">
+            <i class="fas fa-map-marker-alt me-2"></i>
+            Current location: <strong>{{ template_data.current_location_label }}</strong>
+          </div>
+          {% endif %}
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">
+              <label for="{{ template_data.form.location.id_for_label }}" class="form-label">Select your city</label>
+              {{ template_data.form.location }}
+            </div>
+            <button type="submit" class="btn btn-primary">Save Location</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

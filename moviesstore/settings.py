@@ -133,3 +133,7 @@ STATICFILES_DIRS = [
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+
+# location-feature-branch: Google Maps API key for trending map visualization
+# Pulls from environment variable, defaults to empty string if not set
+GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')

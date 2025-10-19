@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python manage.py seed_test_orders)",
+      "Bash(python -m json.tool)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

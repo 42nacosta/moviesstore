@@ -1,7 +1,11 @@
+from collections import OrderedDict
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Movie, Review, Petition, Vote
-from django.db.models import Sum
+from .models import Movie, Review, Petition, Vote, UserLocation
+from django.db.models import Sum, Avg, Count
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.conf import settings
+from cart.models import Item
 # Create your views here.
 @login_required
 def delete_review(request, id, review_id):
@@ -115,3 +119,87 @@ def upvote_petition(request, petition_id):
 def clear(request):
     request.session['cart'] = {}
     return redirect('cart.index')
+
+# location-feature-branch: Trending map page view - renders template with Google Maps API key
+def trending_map(request):
+    template_data = {
+        'title': 'Local Popularity Map',
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY
+    }
+    return render(request, 'movies/trending_map.html', {'template_data': template_data})
+
+# location-feature-branch: JSON API returning trending movie data aggregated by location
+# Groups purchases by city/state and attaches movie stats including average review rating
+def trending_data_api(request):
+    # Pre-calculate review statistics per movie for rating display
+    review_stats = (
+        Review.objects
+        .values('movie_id')
+        .annotate(avg_rating=Avg('rating'), total_reviews=Count('rating'))
+    )
+    review_lookup = {
+        entry['movie_id']: entry for entry in review_stats
+    }
+
+    # Aggregate purchase counts per movie within each city
+    city_movie_data = (
+        Item.objects
+        .select_related('order__user__userlocation', 'movie')
+        .filter(order__user__userlocation__isnull=False)
+        .values(
+            'order__user__userlocation__latitude',
+            'order__user__userlocation__longitude',
+            'order__user__userlocation__city',
+            'order__user__userlocation__state_province',
+            'order__user__userlocation__country',
+            'movie__name',
+            'movie__id',
+            'movie__price'
+        )
+        .annotate(purchase_count=Sum('quantity'))
+        .order_by(
+            'order__user__userlocation__city',
+            '-purchase_count',
+            'movie__name'
+        )
+    )
+
+    # OrderedDict preserves query ordering for deterministic movie lists
+    city_lookup = OrderedDict()
+    for item in city_movie_data:
+        city_name = item['order__user__userlocation__city']
+        latitude = item['order__user__userlocation__latitude']
+        longitude = item['order__user__userlocation__longitude']
+
+        # Skip entries without essential location metadata
+        if not city_name or latitude is None or longitude is None:
+            continue
+
+        state = item['order__user__userlocation__state_province']
+        country = item['order__user__userlocation__country']
+        city_key = (city_name, state, country)
+
+        if city_key not in city_lookup:
+            city_lookup[city_key] = {
+                'city': city_name,
+                'state': state,
+                'country': country,
+                'lat': float(latitude),
+                'lng': float(longitude),
+                'movies': []
+            }
+
+        review_data = review_lookup.get(item['movie__id'], {'avg_rating': None, 'total_reviews': 0})
+        avg_rating = review_data.get('avg_rating')
+        total_reviews = review_data.get('total_reviews', 0)
+
+        city_lookup[city_key]['movies'].append({
+            'id': item['movie__id'],
+            'name': item['movie__name'],
+            'purchase_count': item['purchase_count'],
+            'price': item['movie__price'],
+            'avg_rating': float(avg_rating) if avg_rating is not None else 0.0,
+            'total_reviews': total_reviews,
+        })
+
+    return JsonResponse(list(city_lookup.values()), safe=False)
