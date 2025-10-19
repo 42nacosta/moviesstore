@@ -7,6 +7,13 @@ from django.contrib.auth.decorators import login_required
 def delete_review(request, id, review_id):
     review = get_object_or_404(Review, id=review_id,
         user=request.user)
+    movie = review.movie
+    if movie.reviewCount == 1:
+        movie.rating = 0
+    elif review.rating != 0:
+        movie.rating = ((float(movie.rating) * movie.reviewCount) - float(review.rating)) / (movie.reviewCount - 1)
+    movie.reviewCount -= 1
+    movie.save()
     review.delete()
     return redirect('movies.show', id=id)
 
@@ -30,12 +37,17 @@ def edit_review(request, id, review_id):
 
 @login_required
 def create_review(request, id):
-    if request.method == 'POST' and request.POST['comment'] != '':
+    if request.method == 'POST' and (request.POST['comment'] != '' or request.POST['rating'] != 1):
         movie = Movie.objects.get(id=id)
         review = Review()
         review.comment = request.POST['comment']
+        review.rating = request.POST['rating']
         review.movie = movie
+        if review.rating != 0:
+            movie.rating = (float(review.rating) + float(movie.rating)) / (movie.reviewCount + 1)
+        movie.reviewCount += 1
         review.user = request.user
+        movie.save()
         review.save()
         return redirect('movies.show', id=id)
     else:

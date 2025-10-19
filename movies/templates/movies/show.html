@@ -7,6 +7,7 @@
       <div class="col-md-6 mx-auto mb-3">
         <h2>{{ template_data.movie.name }}</h2>
         <hr />
+        <p><b>Average Rating:</b> {{ template_data.movie.rating }}</p>
         <p><b>Description:</b> {{ template_data.movie.description }}</p>
         <p><b>Price:</b> ${{ template_data.movie.price }}</p>
         <p class="card-text">
@@ -37,6 +38,7 @@
             <h6 class="card-subtitle mb-2 text-muted">
               {{ review.date }}
             </h6>
+            <p class="card-text">Rating: {{ review.rating }} stars</p>
             <p class="card-text">{{ review.comment }}</p>
             {% if user.is_authenticated and user == review.user %}
             <a class="btn btn-primary"
@@ -62,8 +64,12 @@
                   <form method="POST" action="{% url 'movies.create_review' id=template_data.movie.id %}">
                     {% csrf_token %}
                     <p>
+                      <label for="comment">Rating:</label>
+                      <div class="input-group-text">Quantity</div>
+                        <input type="number" min="1" max="5" class="form-control rating-input" name="rating" value="1">
+                      </div>
                       <label for="comment">Comment:</label>
-                      <textarea name="comment" required class="form-control" id="comment"></textarea>
+                      <textarea name="comment" class="form-control" id="comment"></textarea>
                     </p>
 
                     <div class="text-center">
