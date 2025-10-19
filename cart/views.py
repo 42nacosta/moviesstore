@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404, redirect
 from movies.models import Movie
@@ -8,6 +9,11 @@ from django.contrib.auth.decorators import login_required
 # Create your views here.
 @login_required
 def purchase(request):
+    # location-feature-branch: Require location before completing purchase
+    if not hasattr(request.user, 'userlocation'):
+        messages.warning(request, 'Please set your location in your profile before making a purchase.')
+        return redirect('accounts.profile')
+
     cart = request.session.get('cart', {})
     movie_ids = list(cart.keys())
     if (movie_ids == []):
@@ -49,6 +55,7 @@ def index(request):
     movies_in_cart = []
     cart = request.session.get('cart', {})
     movie_ids = list(cart.keys())
+    user_has_location = request.user.is_authenticated and hasattr(request.user, 'userlocation')
     if (movie_ids != []):
         movies_in_cart = Movie.objects.filter(id__in=movie_ids)
         cart_total = calculate_cart_total(cart, movies_in_cart)
@@ -56,6 +63,7 @@ def index(request):
     template_data['title'] = 'Cart'
     template_data['movies_in_cart'] = movies_in_cart
     template_data['cart_total'] = cart_total
+    template_data['user_has_location'] = user_has_location
     return render(request, 'cart/index.html', {'template_data': template_data})
 
 def add_to_cart(request, id):
