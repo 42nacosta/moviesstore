@@ -136,4 +136,4 @@ MEDIA_URL = '/media/'
 
 # location-feature-branch: Google Maps API key for trending map visualization
 # Pulls from environment variable, defaults to empty string if not set
-GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
+GOOGLE_MAPS_API_KEY = 'AIzaSyDDR95hs5hSVdTfN9zWoJtrp-9qyxG15MU'
